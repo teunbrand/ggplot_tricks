@@ -1,0 +1,149 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path  = "man/figures/README-",
+  fig.align = "center",
+  out.width = "80%",
+  dev       = "ragg_png",
+  dpi       = 132
+)
+```
+
+# ggplot tricks
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+The goal of this repository is to keep track of some neat [ggplot2](https://ggplot2.tidyverse.org/) tricks I've learned. This assumes you've familiarised yourself with the basics of ggplot2 and can construct some nice plots of your own. If not, please peruse the [book](https://ggplot2-book.org/) at your leasure.
+
+I'm not incredibly adapt in gloriously typesetting plots and expertly finetuning themes and colour palettes, so you'd have to forgive me. The `mpg` dataset is very versatile for plotting, so you'll be seeing a lot of that as you read on. Extension packages are great, and I've dabbled myself, but I'll try to limit myself to vanilla ggplot2 tricks here.
+
+For now, this will be mostly a README-only bag of tricks, but I may decide later to put them into separate groups in other files.
+
+## Let's begin
+
+By loading the library and setting a plotting theme. 
+The first trick here is to use `theme_set()` to set a theme for *all* your plots throughout a document. If you find yourself setting a very verbose theme for every plot, here is the place where you set all your common settings. Then never write a novel of theme elements ever again!
+
+```{r}
+library(ggplot2)
+library(scales)
+
+theme_set(
+  # Pick a starting theme
+  theme_gray() +
+  # Add your favourite elements
+  theme(
+    axis.line        = element_line(),
+    panel.background = element_rect(fill = "white"),
+    panel.grid.major = element_line("grey95", linewidth = 0.25),
+    legend.key       = element_rect(fill = NA) 
+  )
+)
+```
+
+## Half-geoms
+
+There are some extensions that offer half-geom versions of things. Of the ones I know, [gghalves](https://erocoar.github.io/gghalves/) and the [see](https://easystats.github.io/see/) package offer some half-geoms.
+
+Here is how to abuse the [delayed evaluation system](https://ggplot2.tidyverse.org/reference/aes_eval.html) to make your own. This can come in handy if you're not willing to take on an extra dependency for just this feature.
+
+### Half-boxplots
+
+The easy case is the boxplot. You can either set `xmin` or `xmax` to `after_scale(x)` to keep the right and left parts of a boxplot respectively. This still works fine with `position = "dodge"`.
+
+```{r half_boxplot}
+# A basic plot to reuse for examples
+p <- ggplot(mpg, aes(class, displ, colour = class)) +
+  guides(colour = "none", fill = "none") +
+  labs(y = "Engine Displacement [L]", x = "Type of car")
+
+p + geom_boxplot(aes(xmin = after_scale(x)))
+```
+
+### Half-errorbars
+
+The same thing that works for boxplots, also works for errorbars.
+
+```{r half_errorbar}
+p + geom_errorbar(
+  stat = "summary",
+  fun.data = mean_se,
+  aes(xmin = after_scale(x))
+)
+```
+
+### Half-violin
+
+We can once again do the same thing for violin plots, but the layer complains about not knowing about the `xmin` aesthetic. It does use that aesthetic, but only after the data has been setup, so it is not *intended* to be a user accessible aesthetic. We can silence the warning by updating the `xmin` default to `NULL`, which means it won't complain, but also doesn't use it if absent. 
+
+```{r half_violin}
+update_geom_defaults("violin", list(xmin = NULL))
+
+p + geom_violin(aes(xmin = after_scale(x)))
+```
+
+### Combining
+
+Not left as an exercise for the reader this time, but I just wanted to show how it would work if you were to combine two halves and want them a little bit offset from one another. We'll abuse the errorbars to serve as staples for the boxplots.
+
+```{r combine_halves}
+# A small nudge offset
+offset <- 0.025
+
+# We can pre-specify the mappings if we plan on recycling some
+right_nudge <- aes(
+  xmin = after_scale(x), 
+  x = stage(class, after_stat = x + offset)
+)
+left_nudge  <- aes(
+  xmax = after_scale(x),
+  x = stage(class, after_stat = x - offset)
+)
+
+# Combining
+p +
+  geom_violin(right_nudge) +
+  geom_boxplot(left_nudge) +
+  geom_errorbar(left_nudge, stat = "boxplot", width = 0.3)
+```
+
+## Setting midpoints in divergent scales
+
+Let's say you have better colour intuition than I have, and three colours aren't enough for your divergent colour palette needs. A painpoint is that it is tricky to get the midpoint right if your limits aren't perfectly centered around it. Enter the `rescaler` argument in league with `scales::rescale_mid()`.
+
+```{r divergent_midpoint}
+my_palette <- c("dodgerblue", "deepskyblue", "white", "hotpink", "deeppink")
+
+ggplot(mpg, aes(displ, hwy, colour = cty - mean(cty))) +
+  geom_point() +
+  scale_colour_gradientn(
+    colours = my_palette, 
+    rescaler = ~ rescale_mid(.x, mid = 0)
+  )
+```
+
+
+  <details style="margin-bottom:10px;">
+  <summary>
+  Session info
+</summary>
+
+```{r, echo = FALSE}
+si <- sessioninfo::session_info()
+
+# People don't need to see my file paths etc
+si$platform$pandoc <- gsub(" @ C:/.*", "", si$platform$pandoc)
+si$packages$library <- NULL
+
+print(si)
+```
+
+</details>
