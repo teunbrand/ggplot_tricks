@@ -27,6 +27,16 @@ I'm not incredibly adapt in gloriously typesetting plots and expertly finetuning
 
 For now, this will be mostly a README-only bag of tricks, but I may decide later to put them into separate groups in other files.
 
+## Table of contents
+
+1. [Start-up](#let's-begin)
+1. [Half-geoms](#half-geoms)
+    1. [Half-boxplots](#half-boxplots)
+    1. [Half-errorbars](#half-errorbars)
+    1. [Half-violin](#half-violin)
+    1. [Combining](#combining)
+1. [Midpoints in diverging scales](#setting-midpoints-in-divergent-scales)
+
 ## Let's begin
 
 By loading the library and setting a plotting theme. 

@@ -21,6 +21,17 @@ myself, but I’ll try to limit myself to vanilla ggplot2 tricks here.
 For now, this will be mostly a README-only bag of tricks, but I may
 decide later to put them into separate groups in other files.
 
+## Table of contents
+
+1.  [Start-up](#let's-begin)
+2.  [Half-geoms](#half-geoms)
+    1.  [Half-boxplots](#half-boxplots)
+    2.  [Half-errorbars](#half-errorbars)
+    3.  [Half-violin](#half-violin)
+    4.  [Combining](#combining)
+3.  [Midpoints in diverging
+    scales](#setting-midpoints-in-divergent-scales)
+
 ## Let’s begin
 
 By loading the library and setting a plotting theme. The first trick
