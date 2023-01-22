@@ -31,6 +31,7 @@ decide later to put them into separate groups in other files.
     4.  [Combining](#combining)
 3.  [Midpoints in diverging
     scales](#setting-midpoints-in-divergent-scales)
+4.  [Facetted tags](#facetted-tags)
 
 ## Let’s begin
 
@@ -186,6 +187,61 @@ p +
 ```
 
 <img src="man/figures/README-centered_midpoint-1.png" width="80%" style="display: block; margin: auto;" />
+
+## Facetted tags
+
+Putting text annotations on facetted plots is a pain, because limits can
+vary on a per-panel basis, so it is very difficult to find the correct
+position. An extension that explores alleviating this pain is the
+[tagger](https://github.com/eliocamp/tagger) extension, but we can do a
+similar thing in vanilla ggplot2.
+
+Luckily, there is a mechanic in ggplot2’s position axes that let’s
+`-Inf` and `Inf` be interpreted as the scale’s minimum and maximum limit
+respectively. You can exploit this by choosing `x = Inf, y = Inf` to put
+the labels in a corner. You can also use `-Inf` instead of `Inf` to
+place at the bottom instead of top, or left instead of right.
+
+We need to match the `hjust`/`vjust` arguments to the side of the plot.
+For `x/y = Inf`, they would need to be `hjust/vjust = 1`, and for
+`x/y = -Inf` they need to be `hjust/vjust = 0`.
+
+``` r
+p + facet_wrap(~ class, scales = "free") +
+  geom_text(
+    # We only need 1 row per facet, so we deduplicate the facetting variable
+    data = ~ subset(.x, !duplicated(class)),
+    aes(x = Inf, y = Inf, label = LETTERS[seq_along(class)]),
+    hjust = 1, vjust = 1,
+    colour = "black"
+  )
+```
+
+<img src="man/figures/README-facet_tag_text-1.png" width="80%" style="display: block; margin: auto;" />
+
+Unfortunately, this places the text straight at the border of the panel,
+which may offend our sense of beauty. We can get slightly fancier by
+using `geom_label()`, which lets us more precisely control the spacing
+between the text and the panel borders by setting the `label.padding`
+argument.
+
+Moreover, we can use `label.size = NA, fill = NA` to hide the textbox
+part of the geom. For illustration purposes, we now place the tag at the
+top-left instead of top-right.
+
+``` r
+p + facet_wrap(~ class, scales = "free") +
+  geom_label(
+    data = ~ subset(.x, !duplicated(class)),
+    aes(x = -Inf, y = Inf, label = LETTERS[seq_along(class)]),
+    hjust = 0, vjust = 1, label.size = NA, fill = NA,
+    label.padding = unit(5, "pt"),
+    colour = "black"
+  )
+```
+
+<img src="man/figures/README-facet_tag_label-1.png" width="80%" style="display: block; margin: auto;" />
+
 <details style="margin-bottom:10px;">
 <summary>
 Session info
@@ -201,7 +257,7 @@ Session info
     #>  collate  English_United Kingdom.utf8
     #>  ctype    English_United Kingdom.utf8
     #>  tz       Europe/Berlin
-    #>  date     2023-01-19
+    #>  date     2023-01-22
     #>  pandoc   2.19.2
     #> 
     #> ─ Packages ───────────────────────────────────────────────────────────────────
