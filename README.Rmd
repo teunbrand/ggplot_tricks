@@ -132,11 +132,28 @@ Let's say you have better colour intuition than I have, and three colours aren't
 ```{r divergent_midpoint}
 my_palette <- c("dodgerblue", "deepskyblue", "white", "hotpink", "deeppink")
 
-ggplot(mpg, aes(displ, hwy, colour = cty - mean(cty))) +
+p <- ggplot(mpg, aes(displ, hwy, colour = cty - mean(cty))) +
   geom_point() +
+  labs(
+    x = "Engine displacement [L]",
+    y = "Highway miles per gallon",
+    colour = "Centered\nvalue"
+  )
+
+p + 
   scale_colour_gradientn(
     colours = my_palette, 
     rescaler = ~ rescale_mid(.x, mid = 0)
+  )
+```
+
+An alternative is to simply center the limits on x. We can do that by providing a function to the scale's limits.
+
+```{r centered_midpoint}
+p +
+  scale_colour_gradientn(
+    colours = my_palette, 
+    limits = ~ c(-1, 1) * max(abs(.x))
   )
 ```
 

@@ -157,8 +157,15 @@ league with `scales::rescale_mid()`.
 ``` r
 my_palette <- c("dodgerblue", "deepskyblue", "white", "hotpink", "deeppink")
 
-ggplot(mpg, aes(displ, hwy, colour = cty - mean(cty))) +
+p <- ggplot(mpg, aes(displ, hwy, colour = cty - mean(cty))) +
   geom_point() +
+  labs(
+    x = "Engine displacement [L]",
+    y = "Highway miles per gallon",
+    colour = "Centered\nvalue"
+  )
+
+p + 
   scale_colour_gradientn(
     colours = my_palette, 
     rescaler = ~ rescale_mid(.x, mid = 0)
@@ -167,6 +174,18 @@ ggplot(mpg, aes(displ, hwy, colour = cty - mean(cty))) +
 
 <img src="man/figures/README-divergent_midpoint-1.png" width="80%" style="display: block; margin: auto;" />
 
+An alternative is to simply center the limits on x. We can do that by
+providing a function to the scale’s limits.
+
+``` r
+p +
+  scale_colour_gradientn(
+    colours = my_palette, 
+    limits = ~ c(-1, 1) * max(abs(.x))
+  )
+```
+
+<img src="man/figures/README-centered_midpoint-1.png" width="80%" style="display: block; margin: auto;" />
 <details style="margin-bottom:10px;">
 <summary>
 Session info
