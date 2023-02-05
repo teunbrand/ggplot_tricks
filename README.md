@@ -202,8 +202,8 @@ similar thing in vanilla ggplot2.
 
 Luckily, there is a mechanic in ggplot2’s position axes that let’s
 `-Inf` and `Inf` be interpreted as the scale’s minimum and maximum limit
-respectively. You can exploit this by choosing `x = Inf, y = Inf` to put
-the labels in a corner. You can also use `-Inf` instead of `Inf` to
+respectively[^1]. You can exploit this by choosing `x = Inf, y = Inf` to
+put the labels in a corner. You can also use `-Inf` instead of `Inf` to
 place at the bottom instead of top, or left instead of right.
 
 We need to match the `hjust`/`vjust` arguments to the side of the plot.
@@ -250,7 +250,7 @@ p + facet_wrap(~ class, scales = "free") +
 
 Let’s say we’re tasked with making a bunch of similar plots, with
 different datasets and columns. For example, we might want to make a
-series of barplots[^1] with some specific pre-sets: we’d like the bars
+series of barplots[^2] with some specific pre-sets: we’d like the bars
 to touch the x-axis and not draw vertical gridlines.
 
 ### Functions
@@ -262,7 +262,7 @@ presets you want in your function.
 I case you might not know, there are various methods to [program with
 the `aes()`
 function](https://ggplot2.tidyverse.org/articles/ggplot2-in-packages.html#using-aes-and-vars-in-a-package-function),
-and using `{{ }}` (curly-curly) is one of the more flexible ways [^2].
+and using `{{ }}` (curly-curly) is one of the more flexible ways [^3].
 
 ``` r
 barplot_fun <- function(data, x) {
@@ -325,7 +325,7 @@ my_plot %+% mtcars + aes(factor(carb), fill = factor(cyl))
 
 <img src="man/figures/README-barplot_skelly_replace-1.png" width="80%" style="display: block; margin: auto;" />
 
-### Ribcage[^3]
+### Ribcage[^4]
 
 The idea here is to not skeletonise the entire plot, but just a
 frequently re-used set of parts. For example, we might want to label our
@@ -426,12 +426,15 @@ Session info
 
 </details>
 
-[^1]: In your soul, do you *really* want to make a bunch of barplots
+[^1]: Unless you self-sabotage your plots by setting
+    `oob = scales::oob_censor_any` in the scale for example.
+
+[^2]: In your soul, do you *really* want to make a bunch of barplots
     though?
 
-[^2]: The alternative is to use the `.data` pronoun, which can be
+[^3]: The alternative is to use the `.data` pronoun, which can be
     `.data$var` if you want to lock in that column in advance, or
     `.data[[var]]` when `var` is passed as a character.
 
-[^3]: This bit was originally called ‘partial skeleton’, but as a
+[^4]: This bit was originally called ‘partial skeleton’, but as a
     ribcage is a part of a skeleton, this title sounded more evocative.

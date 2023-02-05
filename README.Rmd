@@ -168,9 +168,11 @@ p +
 Putting text annotations on facetted plots is a pain, because limits can vary on a per-panel basis, so it is very difficult to find the correct position. 
 An extension that explores alleviating this pain is the [tagger](https://github.com/eliocamp/tagger) extension, but we can do a similar thing in vanilla ggplot2.
 
-Luckily, there is a mechanic in ggplot2's position axes that let's `-Inf` and `Inf` be interpreted as the scale's minimum and maximum limit respectively. 
+Luckily, there is a mechanic in ggplot2's position axes that let's `-Inf` and `Inf` be interpreted as the scale's minimum and maximum limit respectively[^oob]. 
 You can exploit this by choosing `x = Inf, y = Inf` to put the labels in a corner. 
 You can also use `-Inf` instead of `Inf` to place at the bottom instead of top, or left instead of right.
+
+[^oob]: Unless you self-sabotage your plots by setting `oob = scales::oob_censor_any` in the scale for example.
 
 We need to match the `hjust`/`vjust` arguments to the side of the plot. 
 For `x/y = Inf`, they would need to be `hjust/vjust = 1`, and for `x/y = -Inf` they need to be `hjust/vjust = 0`.
