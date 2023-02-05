@@ -45,7 +45,9 @@ For now, this will be mostly a README-only bag of tricks, but I may decide later
 ## Let's begin
 
 By loading the library and setting a plotting theme. 
-The first trick here is to use `theme_set()` to set a theme for *all* your plots throughout a document. If you find yourself setting a very verbose theme for every plot, here is the place where you set all your common settings. Then never write a novel of theme elements ever again!
+The first trick here is to use `theme_set()` to set a theme for *all* your plots throughout a document. If you find yourself setting a very verbose theme for every plot, here is the place where you set all your common settings. Then never write a novel of theme elements ever again[^theme]!
+
+[^theme]: Well, you need to do it once at the start of your document. But then never again! Except in your next document. Just write a `plot_defaults.R` script and `source()` that from your document. Copy-paste that script for every project. Then, truly, *never* again :heart:.
 
 ```{r}
 library(ggplot2)
@@ -210,7 +212,7 @@ p + facet_wrap(~ class, scales = "free") +
 Let's say we're tasked with making a bunch of similar plots, with different datasets and columns.
 For example, we might want to make a series of barplots[^bar] with some specific pre-sets: we'd like the bars to touch the x-axis and not draw vertical gridlines.
 
-[^bar]: In your soul, do you *really* want to make a bunch of barplots though?
+[^bar]: In your soul of souls, do you *really* want to make a bunch of barplots though?
 
 ### Functions
 
