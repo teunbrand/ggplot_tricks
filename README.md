@@ -32,6 +32,10 @@ decide later to put them into separate groups in other files.
 3.  [Midpoints in diverging
     scales](#setting-midpoints-in-divergent-scales)
 4.  [Facetted tags](#facetted-tags)
+5.  [Recycling plots](#recycling-plots)
+    1.  [Functions](#functions)
+    2.  [Skeletons](#skeletons)
+    3.  [Ribcage](#ribcage)
 
 ## Let’s begin
 
@@ -242,6 +246,119 @@ p + facet_wrap(~ class, scales = "free") +
 
 <img src="man/figures/README-facet_tag_label-1.png" width="80%" style="display: block; margin: auto;" />
 
+## Recycling plots
+
+Let’s say we’re tasked with making a bunch of similar plots, with
+different datasets and columns. For example, we might want to make a
+series of barplots[^1] with some specific pre-sets: we’d like the bars
+to touch the x-axis and not draw vertical gridlines.
+
+### Functions
+
+One well-known way to make a bunch of similar plots is to wrap the plot
+construction into a function. That way, you can use encode all the
+presets you want in your function.
+
+I case you might not know, there are various methods to [program with
+the `aes()`
+function](https://ggplot2.tidyverse.org/articles/ggplot2-in-packages.html#using-aes-and-vars-in-a-package-function),
+and using `{{ }}` (curly-curly) is one of the more flexible ways [^2].
+
+``` r
+barplot_fun <- function(data, x) {
+  ggplot(data, aes(x = {{ x }})) +
+    geom_bar(width = 0.618) +
+    scale_y_continuous(expand = c(0, 0, 0.05, 0)) +
+    theme(panel.grid.major.x = element_blank())
+}
+
+barplot_fun(mpg, class)
+```
+
+<img src="man/figures/README-barplot_fun-1.png" width="80%" style="display: block; margin: auto;" />
+
+One drawback of this approach is that you lock-in any aesthetics in the
+function arguments. To go around this, an even simpler way is to simply
+pass `...` directly to `aes()`.
+
+``` r
+barplot_fun <- function(data, ...) {
+  ggplot(data, aes(...)) +
+    geom_bar(width = 0.618) +
+    scale_y_continuous(expand = c(0, 0, 0.1, 0)) +
+    theme(panel.grid.major.x = element_blank())
+}
+
+barplot_fun(mpg, class, fill = factor(cyl))
+```
+
+<img src="man/figures/README-barplot_fun_ellipsis-1.png" width="80%" style="display: block; margin: auto;" />
+
+### Skeletons
+
+Another method of doing a very similar thing, is to use plot
+‘skeletons’. The idea behind a skeleton is that you can build a plot,
+with or without any `data` argument, and add in the specifics later.
+Then, when you actually want to make a plot, you can use the `%+%` to
+fill in or replace the dataset, and `+ aes(...)` to set the relevant
+aesthetics.
+
+``` r
+barplot_skelly <- ggplot() +
+  geom_bar(width = 0.618) +
+  scale_y_continuous(expand = c(0, 0, 0.1, 0)) +
+  theme(panel.grid.major.x = element_blank())
+
+my_plot <- barplot_skelly %+% mpg + aes(class, fill = factor(cyl)) 
+my_plot
+```
+
+<img src="man/figures/README-barplot_skelly-1.png" width="80%" style="display: block; margin: auto;" />
+
+One neat thing about these skeletons is that even when you’ve already
+filled in the `data` and `mapping` arguments, you can just replace them
+again and again.
+
+``` r
+my_plot %+% mtcars + aes(factor(carb), fill = factor(cyl))
+```
+
+<img src="man/figures/README-barplot_skelly_replace-1.png" width="80%" style="display: block; margin: auto;" />
+
+### Ribcage[^3]
+
+The idea here is to not skeletonise the entire plot, but just a
+frequently re-used set of parts. For example, we might want to label our
+barplot, and pack together all the things that make up a labelled
+barplot. The trick to this is to *not* add these components together
+with `+`, but simply put them in a `list()`. You can then `+` your list
+together with the main plot call.
+
+``` r
+labelled_bars <- list(
+  geom_bar(width = 0.618),
+  geom_text(
+    stat = "count",
+    aes(y     = after_stat(count), 
+        label = after_stat(count), 
+        fill  = NULL),
+    vjust = -1
+  ),
+  scale_y_continuous(expand = c(0, 0, 0.1, 0)),
+  theme(panel.grid.major.x = element_blank())
+)
+
+ggplot(mpg, aes(class, fill = factor(cyl))) +
+  labelled_bars +
+  ggtitle("The `mpg` dataset")
+
+ggplot(mtcars, aes(factor(carb), fill = factor(cyl))) +
+  labelled_bars +
+  ggtitle("The `mtcars` dataset")
+```
+
+<img src="man/figures/README-ribcage-1.png" width="80%" style="display: block; margin: auto;" /><img src="man/figures/README-ribcage-2.png" width="80%" style="display: block; margin: auto;" />
+
 <details style="margin-bottom:10px;">
 <summary>
 Session info
@@ -257,7 +374,7 @@ Session info
     #>  collate  English_United Kingdom.utf8
     #>  ctype    English_United Kingdom.utf8
     #>  tz       Europe/Berlin
-    #>  date     2023-01-22
+    #>  date     2023-02-05
     #>  pandoc   2.19.2
     #> 
     #> ─ Packages ───────────────────────────────────────────────────────────────────
@@ -308,3 +425,13 @@ Session info
     #> ──────────────────────────────────────────────────────────────────────────────
 
 </details>
+
+[^1]: In your soul, do you *really* want to make a bunch of barplots
+    though?
+
+[^2]: The alternative is to use the `.data` pronoun, which can be
+    `.data$var` if you want to lock in that column in advance, or
+    `.data[[var]]` when `var` is passed as a character.
+
+[^3]: This bit was originally called ‘partial skeleton’, but as a
+    ribcage is a part of a skeleton, this title sounded more evocative.
