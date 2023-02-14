@@ -30,6 +30,9 @@ For now, this will be mostly a README-only bag of tricks, but I may decide later
 ## Table of contents
 
 1. [Start-up](#let's-begin)
+1. [Splicing aesthetics](#splicing-aesthetics)
+    1. [Colour-fill relations](#relating-colour-and-fill)
+    1. [Text contrast](#text-contrast)
 1. [Half-geoms](#half-geoms)
     1. [Half-boxplots](#half-boxplots)
     1. [Half-errorbars](#half-errorbars)
@@ -66,6 +69,78 @@ theme_set(
 )
 ```
 
+## Splicing aesthetics
+
+The `?aes` documentation doesn't tell you this, but you can splice the `mapping` argument in ggplot2. 
+What does that mean? 
+Well it means that you can compose the `mapping` argument on the go with `!!!`. 
+This is especially nifty if you need to recycle aesthetics every once in a while.
+
+```{r splice_aes}
+my_mapping <- aes(x = foo, y = bar)
+
+aes(colour = qux, !!!my_mapping)
+```
+
+### Relating colour and fill
+
+My personal favourite use of this is to make the `fill` colour match the `colour` colour, but slightly lighter[^myfill]. 
+We'll use the delayed evaluation system for this, `after_scale()` in this case, which you'll see more of in the section following this one.
+I'll repeat this trick a couple of times throughout this document.
+
+[^myfill]: This is a lie. In reality, I use `aes(colour = after_scale(colorspace::darken(fill, 0.3)))` instead of lightening the fill. I didn't want this README to have a dependency on {colorspace} though.
+
+```{r, splice_colour}
+my_fill <- aes(fill = after_scale(alpha(colour, 0.3)))
+
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(colour = factor(cyl), !!!my_fill), shape = 21)
+```
+
+### Text contrast
+
+You may find yourself in a situation wherein you're asked to make a heatmap of a small number of variables.
+Typically, sequential scales run from light to dark or vice versa, which makes text in a single colour hard to read.
+We could devise a method to automatically write the text in white on a dark background, and black on a light background. The function below considers a lightness value for a colour, and returns either black or white depending on that lightness.
+
+```{r constrast}
+contrast <- function(colour) {
+  out   <- rep("black", length(colour))
+  light <- farver::get_channel(colour, "l", space = "hcl")
+  out[light < 50] <- "white"
+  out
+}
+```
+
+Now, we can make an aesthetic to be spliced into a layer's `mapping` argument on demand.
+
+```{r autocontrast}
+autocontrast <- aes(colour = after_scale(contrast(fill)))
+```
+
+Lastly, we can test out our automatic contrast contraption. 
+You may notice that it adapts to the scale, so you wouldn't need to do a bunch of conditional formatting for this.
+
+```{r splice_contrast, fig.show='hold'}
+cors <- cor(mtcars)
+
+# Melt matrix
+df <- data.frame(
+  col = colnames(cors)[as.vector(col(cors))],
+  row = rownames(cors)[as.vector(row(cors))],
+  value = as.vector(cors)
+)
+
+# Basic plot
+p <- ggplot(df, aes(row, col, fill = value)) +
+  geom_raster() +
+  geom_text(aes(label = round(value, 2), !!!autocontrast)) +
+  coord_equal()
+
+p + scale_fill_viridis_c(direction =  1)
+p + scale_fill_viridis_c(direction = -1)
+```
+
 ## Half-geoms
 
 There are some extensions that offer half-geom versions of things. Of the ones I know, [gghalves](https://erocoar.github.io/gghalves/) and the [see](https://easystats.github.io/see/) package offer some half-geoms.
@@ -78,7 +153,7 @@ The easy case is the boxplot. You can either set `xmin` or `xmax` to `after_scal
 
 ```{r half_boxplot}
 # A basic plot to reuse for examples
-p <- ggplot(mpg, aes(class, displ, colour = class)) +
+p <- ggplot(mpg, aes(class, displ, colour = class, !!!my_fill)) +
   guides(colour = "none", fill = "none") +
   labs(y = "Engine Displacement [L]", x = "Type of car")
 
@@ -245,7 +320,7 @@ barplot_fun <- function(data, ...) {
     theme(panel.grid.major.x = element_blank())
 }
 
-barplot_fun(mpg, class, fill = factor(cyl))
+barplot_fun(mpg, class, colour = factor(cyl), !!!my_fill)
 ```
 
 
@@ -261,14 +336,16 @@ barplot_skelly <- ggplot() +
   scale_y_continuous(expand = c(0, 0, 0.1, 0)) +
   theme(panel.grid.major.x = element_blank())
 
-my_plot <- barplot_skelly %+% mpg + aes(class, fill = factor(cyl)) 
+my_plot <- barplot_skelly %+% mpg + 
+  aes(class, colour = factor(cyl), !!!my_fill) 
 my_plot
 ```
 
 One neat thing about these skeletons is that even when you've already filled in the `data` and `mapping` arguments, you can just replace them again and again.
 
 ```{r barplot_skelly_replace}
-my_plot %+% mtcars + aes(factor(carb), fill = factor(cyl))
+my_plot %+% mtcars + 
+  aes(factor(carb), colour = factor(cyl), !!!my_fill)
 ```
 
 ### Ribcage[^cage]
@@ -281,23 +358,23 @@ The trick to this is to *not* add these components together with `+`, but simply
 
 ```{r ribcage, fig.show='hold'}
 labelled_bars <- list(
-  geom_bar(width = 0.618),
+  geom_bar(my_fill, width = 0.618),
   geom_text(
     stat = "count",
     aes(y     = after_stat(count), 
         label = after_stat(count), 
-        fill  = NULL),
-    vjust = -1
+        fill  = NULL, colour = NULL),
+    vjust = -1, show.legend = FALSE
   ),
   scale_y_continuous(expand = c(0, 0, 0.1, 0)),
   theme(panel.grid.major.x = element_blank())
 )
 
-ggplot(mpg, aes(class, fill = factor(cyl))) +
+ggplot(mpg, aes(class, colour = factor(cyl))) +
   labelled_bars +
   ggtitle("The `mpg` dataset")
 
-ggplot(mtcars, aes(factor(carb), fill = factor(cyl))) +
+ggplot(mtcars, aes(factor(carb), colour = factor(cyl))) +
   labelled_bars +
   ggtitle("The `mtcars` dataset")
 ```

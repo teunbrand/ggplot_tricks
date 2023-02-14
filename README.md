@@ -24,15 +24,18 @@ decide later to put them into separate groups in other files.
 ## Table of contents
 
 1.  [Start-up](#let's-begin)
-2.  [Half-geoms](#half-geoms)
+2.  [Splicing aesthetics](#splicing-aesthetics)
+    1.  [Colour-fill relations](#relating-colour-and-fill)
+    2.  [Text contrast](#text-contrast)
+3.  [Half-geoms](#half-geoms)
     1.  [Half-boxplots](#half-boxplots)
     2.  [Half-errorbars](#half-errorbars)
     3.  [Half-violin](#half-violin)
     4.  [Combining](#combining)
-3.  [Midpoints in diverging
+4.  [Midpoints in diverging
     scales](#setting-midpoints-in-divergent-scales)
-4.  [Facetted tags](#facetted-tags)
-5.  [Recycling plots](#recycling-plots)
+5.  [Facetted tags](#facetted-tags)
+6.  [Recycling plots](#recycling-plots)
     1.  [Functions](#functions)
     2.  [Skeletons](#skeletons)
     3.  [Ribcage](#ribcage)
@@ -62,6 +65,93 @@ theme_set(
 )
 ```
 
+## Splicing aesthetics
+
+The `?aes` documentation doesn’t tell you this, but you can splice the
+`mapping` argument in ggplot2. What does that mean? Well it means that
+you can compose the `mapping` argument on the go with `!!!`. This is
+especially nifty if you need to recycle aesthetics every once in a
+while.
+
+``` r
+my_mapping <- aes(x = foo, y = bar)
+
+aes(colour = qux, !!!my_mapping)
+#> Aesthetic mapping: 
+#> * `x`      -> `foo`
+#> * `y`      -> `bar`
+#> * `colour` -> `qux`
+```
+
+### Relating colour and fill
+
+My personal favourite use of this is to make the `fill` colour match the
+`colour` colour, but slightly lighter[^2]. We’ll use the delayed
+evaluation system for this, `after_scale()` in this case, which you’ll
+see more of in the section following this one. I’ll repeat this trick a
+couple of times throughout this document.
+
+``` r
+my_fill <- aes(fill = after_scale(alpha(colour, 0.3)))
+
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(colour = factor(cyl), !!!my_fill), shape = 21)
+```
+
+<img src="man/figures/README-splice_colour-1.png" width="80%" style="display: block; margin: auto;" />
+
+### Text contrast
+
+You may find yourself in a situation wherein you’re asked to make a
+heatmap of a small number of variables. Typically, sequential scales run
+from light to dark or vice versa, which makes text in a single colour
+hard to read. We could devise a method to automatically write the text
+in white on a dark background, and black on a light background. The
+function below considers a lightness value for a colour, and returns
+either black or white depending on that lightness.
+
+``` r
+contrast <- function(colour) {
+  out   <- rep("black", length(colour))
+  light <- farver::get_channel(colour, "l", space = "hcl")
+  out[light < 50] <- "white"
+  out
+}
+```
+
+Now, we can make an aesthetic to be spliced into a layer’s `mapping`
+argument on demand.
+
+``` r
+autocontrast <- aes(colour = after_scale(contrast(fill)))
+```
+
+Lastly, we can test out our automatic contrast contraption. You may
+notice that it adapts to the scale, so you wouldn’t need to do a bunch
+of conditional formatting for this.
+
+``` r
+cors <- cor(mtcars)
+
+# Melt matrix
+df <- data.frame(
+  col = colnames(cors)[as.vector(col(cors))],
+  row = rownames(cors)[as.vector(row(cors))],
+  value = as.vector(cors)
+)
+
+# Basic plot
+p <- ggplot(df, aes(row, col, fill = value)) +
+  geom_raster() +
+  geom_text(aes(label = round(value, 2), !!!autocontrast)) +
+  coord_equal()
+
+p + scale_fill_viridis_c(direction =  1)
+p + scale_fill_viridis_c(direction = -1)
+```
+
+<img src="man/figures/README-splice_contrast-1.png" width="80%" style="display: block; margin: auto;" /><img src="man/figures/README-splice_contrast-2.png" width="80%" style="display: block; margin: auto;" />
+
 ## Half-geoms
 
 There are some extensions that offer half-geom versions of things. Of
@@ -81,7 +171,7 @@ respectively. This still works fine with `position = "dodge"`.
 
 ``` r
 # A basic plot to reuse for examples
-p <- ggplot(mpg, aes(class, displ, colour = class)) +
+p <- ggplot(mpg, aes(class, displ, colour = class, !!!my_fill)) +
   guides(colour = "none", fill = "none") +
   labs(y = "Engine Displacement [L]", x = "Type of car")
 
@@ -202,7 +292,7 @@ similar thing in vanilla ggplot2.
 
 Luckily, there is a mechanic in ggplot2’s position axes that let’s
 `-Inf` and `Inf` be interpreted as the scale’s minimum and maximum limit
-respectively[^2]. You can exploit this by choosing `x = Inf, y = Inf` to
+respectively[^3]. You can exploit this by choosing `x = Inf, y = Inf` to
 put the labels in a corner. You can also use `-Inf` instead of `Inf` to
 place at the bottom instead of top, or left instead of right.
 
@@ -250,7 +340,7 @@ p + facet_wrap(~ class, scales = "free") +
 
 Let’s say we’re tasked with making a bunch of similar plots, with
 different datasets and columns. For example, we might want to make a
-series of barplots[^3] with some specific pre-sets: we’d like the bars
+series of barplots[^4] with some specific pre-sets: we’d like the bars
 to touch the x-axis and not draw vertical gridlines.
 
 ### Functions
@@ -262,7 +352,7 @@ presets you want in your function.
 I case you might not know, there are various methods to [program with
 the `aes()`
 function](https://ggplot2.tidyverse.org/articles/ggplot2-in-packages.html#using-aes-and-vars-in-a-package-function),
-and using `{{ }}` (curly-curly) is one of the more flexible ways [^4].
+and using `{{ }}` (curly-curly) is one of the more flexible ways [^5].
 
 ``` r
 barplot_fun <- function(data, x) {
@@ -289,7 +379,7 @@ barplot_fun <- function(data, ...) {
     theme(panel.grid.major.x = element_blank())
 }
 
-barplot_fun(mpg, class, fill = factor(cyl))
+barplot_fun(mpg, class, colour = factor(cyl), !!!my_fill)
 ```
 
 <img src="man/figures/README-barplot_fun_ellipsis-1.png" width="80%" style="display: block; margin: auto;" />
@@ -309,7 +399,8 @@ barplot_skelly <- ggplot() +
   scale_y_continuous(expand = c(0, 0, 0.1, 0)) +
   theme(panel.grid.major.x = element_blank())
 
-my_plot <- barplot_skelly %+% mpg + aes(class, fill = factor(cyl)) 
+my_plot <- barplot_skelly %+% mpg + 
+  aes(class, colour = factor(cyl), !!!my_fill) 
 my_plot
 ```
 
@@ -320,12 +411,13 @@ filled in the `data` and `mapping` arguments, you can just replace them
 again and again.
 
 ``` r
-my_plot %+% mtcars + aes(factor(carb), fill = factor(cyl))
+my_plot %+% mtcars + 
+  aes(factor(carb), colour = factor(cyl), !!!my_fill)
 ```
 
 <img src="man/figures/README-barplot_skelly_replace-1.png" width="80%" style="display: block; margin: auto;" />
 
-### Ribcage[^5]
+### Ribcage[^6]
 
 The idea here is to not skeletonise the entire plot, but just a
 frequently re-used set of parts. For example, we might want to label our
@@ -336,23 +428,23 @@ together with the main plot call.
 
 ``` r
 labelled_bars <- list(
-  geom_bar(width = 0.618),
+  geom_bar(my_fill, width = 0.618),
   geom_text(
     stat = "count",
     aes(y     = after_stat(count), 
         label = after_stat(count), 
-        fill  = NULL),
-    vjust = -1
+        fill  = NULL, colour = NULL),
+    vjust = -1, show.legend = FALSE
   ),
   scale_y_continuous(expand = c(0, 0, 0.1, 0)),
   theme(panel.grid.major.x = element_blank())
 )
 
-ggplot(mpg, aes(class, fill = factor(cyl))) +
+ggplot(mpg, aes(class, colour = factor(cyl))) +
   labelled_bars +
   ggtitle("The `mpg` dataset")
 
-ggplot(mtcars, aes(factor(carb), fill = factor(cyl))) +
+ggplot(mtcars, aes(factor(carb), colour = factor(cyl))) +
   labelled_bars +
   ggtitle("The `mtcars` dataset")
 ```
@@ -367,14 +459,14 @@ Session info
     #> ─ Session info ───────────────────────────────────────────────────────────────
     #>  setting  value
     #>  version  R version 4.2.2 (2022-10-31 ucrt)
-    #>  os       Windows 10 x64 (build 22000)
+    #>  os       Windows 10 x64 (build 22621)
     #>  system   x86_64, mingw32
     #>  ui       RTerm
     #>  language (EN)
     #>  collate  English_United Kingdom.utf8
     #>  ctype    English_United Kingdom.utf8
     #>  tz       Europe/Berlin
-    #>  date     2023-02-05
+    #>  date     2023-02-14
     #>  pandoc   2.19.2
     #> 
     #> ─ Packages ───────────────────────────────────────────────────────────────────
@@ -390,7 +482,7 @@ Session info
     #>  farver        2.1.1   2022-07-06 []  CRAN (R 4.2.1)
     #>  fastmap       1.1.0   2021-01-25 []  CRAN (R 4.2.0)
     #>  generics      0.1.3   2022-07-05 []  CRAN (R 4.2.1)
-    #>  ggplot2     * 3.4.0   2022-11-04 []  CRAN (R 4.2.2)
+    #>  ggplot2     * 3.4.1   2023-02-10 []  CRAN (R 4.2.2)
     #>  glue          1.6.2   2022-02-24 []  CRAN (R 4.2.0)
     #>  gtable        0.3.1   2022-09-01 []  CRAN (R 4.2.1)
     #>  highr         0.10    2022-12-22 []  CRAN (R 4.2.2)
@@ -417,6 +509,7 @@ Session info
     #>  tidyselect    1.2.0   2022-10-10 []  CRAN (R 4.2.2)
     #>  utf8          1.2.2   2021-07-24 []  CRAN (R 4.2.0)
     #>  vctrs         0.5.0   2022-10-22 []  CRAN (R 4.2.2)
+    #>  viridisLite   0.4.1   2022-08-22 []  CRAN (R 4.2.1)
     #>  withr         2.5.0   2022-03-03 []  CRAN (R 4.2.0)
     #>  xfun          0.36    2022-12-21 []  CRAN (R 4.2.2)
     #>  yaml          2.3.5   2022-02-21 []  CRAN (R 4.2.0)
@@ -432,15 +525,20 @@ Session info
     Copy-paste that script for every project. Then, truly, *never* again
     :heart:.
 
-[^2]: Unless you self-sabotage your plots by setting
+[^2]: This is a lie. In reality, I use
+    `aes(colour = after_scale(colorspace::darken(fill, 0.3)))` instead
+    of lightening the fill. I didn’t want this README to have a
+    dependency on {colorspace} though.
+
+[^3]: Unless you self-sabotage your plots by setting
     `oob = scales::oob_censor_any` in the scale for example.
 
-[^3]: In your soul of souls, do you *really* want to make a bunch of
+[^4]: In your soul of souls, do you *really* want to make a bunch of
     barplots though?
 
-[^4]: The alternative is to use the `.data` pronoun, which can be
+[^5]: The alternative is to use the `.data` pronoun, which can be
     `.data$var` if you want to lock in that column in advance, or
     `.data[[var]]` when `var` is passed as a character.
 
-[^5]: This bit was originally called ‘partial skeleton’, but as a
+[^6]: This bit was originally called ‘partial skeleton’, but as a
     ribcage is a part of a skeleton, this title sounded more evocative.
