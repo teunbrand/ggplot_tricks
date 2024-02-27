@@ -256,13 +256,13 @@ q <- ggplot(df, aes(Murder, Rape, label = state)) +
 q + geom_text()
 ```
 
-There are several solutions to this problem, and they all come with drawbacks:
+There are several typical solutions to this problem, and they all come with drawbacks:
 
 * The [{ggrepel}](https://ggrepel.slowkow.com/) package is wonderful for solving this problem. But if you try to keep your dependencies to a minimum, you might not want to depend on it.
 * You can set the `nudge_x` and `nudge_y` parameters. The issue here is that these are defined in data units, so spacing is unpredictable, and there is no way to have these depend on the original locations.
 * You can set the `hjust` and `vjust` aesthetics. It allows you to depend on the original locations, but these have no natural offsets.
 
-Here are options 1 and 2 in action:
+Here are options 2 and 3 in action:
 
 ```{r scatterplot_text_2, fig.show='hold'}
 q + geom_text(nudge_x = 1, nudge_y = 1)

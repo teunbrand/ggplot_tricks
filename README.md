@@ -301,8 +301,8 @@ q + geom_text()
 
 <img src="man/figures/README-scatterplot_text_1-1.png" width="80%" style="display: block; margin: auto;" />
 
-There are several solutions to this problem, and they all come with
-drawbacks:
+There are several typical solutions to this problem, and they all come
+with drawbacks:
 
 - The [{ggrepel}](https://ggrepel.slowkow.com/) package is wonderful for
   solving this problem. But if you try to keep your dependencies to a
@@ -313,7 +313,7 @@ drawbacks:
 - You can set the `hjust` and `vjust` aesthetics. It allows you to
   depend on the original locations, but these have no natural offsets.
 
-Here are options 1 and 2 in action:
+Here are options 2 and 3 in action:
 
 ``` r
 q + geom_text(nudge_x = 1, nudge_y = 1)
