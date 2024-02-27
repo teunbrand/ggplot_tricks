@@ -34,7 +34,9 @@ decide later to put them into separate groups in other files.
     4.  [Combining](#combining)
 4.  [Midpoints in diverging
     scales](#setting-midpoints-in-divergent-scales)
-5.  [Facetted tags](#facetted-tags)
+5.  [Labels as text](#labels-as-text)
+    1.  [Labelling points](#labelling-points)
+    2.  (Outdated)[Facetted tags](#facetted-tags)
 6.  [Recycling plots](#recycling-plots)
     1.  [Functions](#functions)
     2.  [Skeletons](#skeletons)
@@ -282,7 +284,7 @@ p +
 
 <img src="man/figures/README-centered_midpoint-1.png" width="80%" style="display: block; margin: auto;" />
 
-## Using `geom_label()` as text
+## Labels as text
 
 ### Labelling points
 

@@ -39,7 +39,9 @@ For now, this will be mostly a README-only bag of tricks, but I may decide later
     1. [Half-violin](#half-violin)
     1. [Combining](#combining)
 1. [Midpoints in diverging scales](#setting-midpoints-in-divergent-scales)
-1. [Facetted tags](#facetted-tags)
+1. [Labels as text](#labels-as-text)
+    1. [Labelling points](#labelling-points)
+    1. (Outdated)[Facetted tags](#facetted-tags)
 1. [Recycling plots](#recycling-plots)
     1. [Functions](#functions)
     1. [Skeletons](#skeletons)
@@ -240,7 +242,7 @@ p +
 ```
 
 
-## Using `geom_label()` as text
+## Labels as text
 
 ### Labelling points
 
