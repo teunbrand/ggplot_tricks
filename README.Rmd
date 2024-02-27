@@ -240,6 +240,64 @@ p +
 ```
 
 
+## Using `geom_label()` as text
+
+### Labelling points
+
+You can label points with `geom_text()`, but a potential problem is that the text and points overlap.
+
+```{r scatterplot_text_1}
+set.seed(0)
+df <- USArrests[sample(nrow(USArrests), 5), ]
+df$state <- rownames(df)
+
+q <- ggplot(df, aes(Murder, Rape, label = state)) +
+  geom_point()
+q + geom_text()
+```
+
+There are several solutions to this problem, and they all come with drawbacks:
+
+* The [{ggrepel}](https://ggrepel.slowkow.com/) package is wonderful for solving this problem. But if you try to keep your dependencies to a minimum, you might not want to depend on it.
+* You can set the `nudge_x` and `nudge_y` parameters. The issue here is that these are defined in data units, so spacing is unpredictable, and there is no way to have these depend on the original locations.
+* You can set the `hjust` and `vjust` aesthetics. It allows you to depend on the original locations, but these have no natural offsets.
+
+Here are options 1 and 2 in action:
+
+```{r scatterplot_text_2, fig.show='hold'}
+q + geom_text(nudge_x = 1, nudge_y = 1)
+
+q + geom_text(aes(
+  hjust = Murder > mean(Murder),
+  vjust = Rape > mean(Rape)
+))
+```
+
+You might think: 'I can just multiply the justifications to get a wider offset', and you'd be right.
+However, because the justification depends on the size of text you might get unequal offsets. Notice in the plot below that 'North Dakota' is offset too munch in the y-direction and 'Rhode Island' in the x-direction.
+
+```{r scatterplot_text_3}
+q + geom_text(aes(
+  label = gsub("North Dakota", "North\nDakota", state),
+  hjust = ((Murder > mean(Murder)) - 0.5) * 1.5 + 0.5,
+  vjust = ((Rape > mean(Rape)) - 0.5) * 3 + 0.5
+))
+```
+
+The nice thing of `geom_label()` is that you can turn off the label box and keep the text. That way, you can continue to use other useful stuff, like the `label.padding` setting, to give an absolute (data-independent) offset from the text to the label.
+
+```{r scatterplot_label}
+q + geom_label(
+  aes(
+    label = gsub(" ", "\n", state),
+    hjust = Murder > mean(Murder),
+    vjust = Rape > mean(Rape)
+  ),
+  label.padding = unit(5, "pt"),
+  label.size = NA, fill = NA
+)
+```
+
 ### Facetted tags
 
 This used to be a tip about putting facet tags in panels, which used to be complicated. With ggplot2 3.5.0, you no longer have to fiddle with setting infinite positions and tweaking the `hjust` or `vjust` parameters. You can now just use `x = I(0.95), y = I(0.95)` to place text in the upper-right corner. Open up the details to see the old tip.

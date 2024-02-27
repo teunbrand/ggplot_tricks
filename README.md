@@ -282,7 +282,94 @@ p +
 
 <img src="man/figures/README-centered_midpoint-1.png" width="80%" style="display: block; margin: auto;" />
 
-## Facetted tags
+## Using `geom_label()` as text
+
+### Labelling points
+
+You can label points with `geom_text()`, but a potential problem is that
+the text and points overlap.
+
+``` r
+set.seed(0)
+df <- USArrests[sample(nrow(USArrests), 5), ]
+df$state <- rownames(df)
+
+q <- ggplot(df, aes(Murder, Rape, label = state)) +
+  geom_point()
+q + geom_text()
+```
+
+<img src="man/figures/README-scatterplot_text_1-1.png" width="80%" style="display: block; margin: auto;" />
+
+There are several solutions to this problem, and they all come with
+drawbacks:
+
+- The [{ggrepel}](https://ggrepel.slowkow.com/) package is wonderful for
+  solving this problem. But if you try to keep your dependencies to a
+  minimum, you might not want to depend on it.
+- You can set the `nudge_x` and `nudge_y` parameters. The issue here is
+  that these are defined in data units, so spacing is unpredictable, and
+  there is no way to have these depend on the original locations.
+- You can set the `hjust` and `vjust` aesthetics. It allows you to
+  depend on the original locations, but these have no natural offsets.
+
+Here are options 1 and 2 in action:
+
+``` r
+q + geom_text(nudge_x = 1, nudge_y = 1)
+
+q + geom_text(aes(
+  hjust = Murder > mean(Murder),
+  vjust = Rape > mean(Rape)
+))
+```
+
+<img src="man/figures/README-scatterplot_text_2-1.png" width="80%" style="display: block; margin: auto;" /><img src="man/figures/README-scatterplot_text_2-2.png" width="80%" style="display: block; margin: auto;" />
+
+You might think: ‘I can just multiply the justifications to get a wider
+offset’, and you’d be right. However, because the justification depends
+on the size of text you might get unequal offsets. Notice in the plot
+below that ‘North Dakota’ is offset too munch in the y-direction and
+‘Rhode Island’ in the x-direction.
+
+``` r
+q + geom_text(aes(
+  label = gsub("North Dakota", "North\nDakota", state),
+  hjust = ((Murder > mean(Murder)) - 0.5) * 1.5 + 0.5,
+  vjust = ((Rape > mean(Rape)) - 0.5) * 3 + 0.5
+))
+```
+
+<img src="man/figures/README-scatterplot_text_3-1.png" width="80%" style="display: block; margin: auto;" />
+
+The nice thing of `geom_label()` is that you can turn off the label box
+and keep the text. That way, you can continue to use other useful stuff,
+like the `label.padding` setting, to give an absolute (data-independent)
+offset from the text to the label.
+
+``` r
+q + geom_label(
+  aes(
+    label = gsub(" ", "\n", state),
+    hjust = Murder > mean(Murder),
+    vjust = Rape > mean(Rape)
+  ),
+  label.padding = unit(5, "pt"),
+  label.size = NA, fill = NA
+)
+```
+
+<img src="man/figures/README-scatterplot_label-1.png" width="80%" style="display: block; margin: auto;" />
+
+### Facetted tags
+
+This used to be a tip about putting facet tags in panels, which used to
+be complicated. With ggplot2 3.5.0, you no longer have to fiddle with
+setting infinite positions and tweaking the `hjust` or `vjust`
+parameters. You can now just use `x = I(0.95), y = I(0.95)` to place
+text in the upper-right corner. Open up the details to see the old tip.
+
+<details>
 
 Putting text annotations on facetted plots is a pain, because limits can
 vary on a per-panel basis, so it is very difficult to find the correct
@@ -335,6 +422,8 @@ p + facet_wrap(~ class, scales = "free") +
 ```
 
 <img src="man/figures/README-facet_tag_label-1.png" width="80%" style="display: block; margin: auto;" />
+
+</details>
 
 ## Recycling plots
 
@@ -458,61 +547,57 @@ Session info
 
     #> ─ Session info ───────────────────────────────────────────────────────────────
     #>  setting  value
-    #>  version  R version 4.2.2 (2022-10-31 ucrt)
-    #>  os       Windows 10 x64 (build 22621)
+    #>  version  R version 4.3.2 (2023-10-31 ucrt)
+    #>  os       Windows 11 x64 (build 22631)
     #>  system   x86_64, mingw32
     #>  ui       RTerm
     #>  language (EN)
-    #>  collate  English_United Kingdom.utf8
-    #>  ctype    English_United Kingdom.utf8
-    #>  tz       Europe/Berlin
-    #>  date     2023-02-14
-    #>  pandoc   2.19.2
+    #>  collate  English_Netherlands.utf8
+    #>  ctype    English_Netherlands.utf8
+    #>  tz       Europe/Amsterdam
+    #>  date     2024-02-27
+    #>  pandoc   3.1.1
     #> 
     #> ─ Packages ───────────────────────────────────────────────────────────────────
-    #>  package     * version date (UTC) lib source
-    #>  assertthat    0.2.1   2019-03-21 []  CRAN (R 4.2.0)
-    #>  cli           3.4.1   2022-09-23 []  CRAN (R 4.2.2)
-    #>  colorspace    2.0-3   2022-02-21 []  CRAN (R 4.2.0)
-    #>  DBI           1.1.3   2022-06-18 []  CRAN (R 4.2.2)
-    #>  digest        0.6.29  2021-12-01 []  CRAN (R 4.2.0)
-    #>  dplyr         1.0.10  2022-09-01 []  CRAN (R 4.2.1)
-    #>  evaluate      0.19    2022-12-13 []  CRAN (R 4.2.2)
-    #>  fansi         1.0.3   2022-03-24 []  CRAN (R 4.2.0)
-    #>  farver        2.1.1   2022-07-06 []  CRAN (R 4.2.1)
-    #>  fastmap       1.1.0   2021-01-25 []  CRAN (R 4.2.0)
-    #>  generics      0.1.3   2022-07-05 []  CRAN (R 4.2.1)
-    #>  ggplot2     * 3.4.1   2023-02-10 []  CRAN (R 4.2.2)
-    #>  glue          1.6.2   2022-02-24 []  CRAN (R 4.2.0)
-    #>  gtable        0.3.1   2022-09-01 []  CRAN (R 4.2.1)
-    #>  highr         0.10    2022-12-22 []  CRAN (R 4.2.2)
-    #>  htmltools     0.5.4   2022-12-07 []  CRAN (R 4.2.2)
-    #>  knitr         1.41    2022-11-18 []  CRAN (R 4.2.2)
-    #>  labeling      0.4.2   2020-10-20 []  CRAN (R 4.2.0)
-    #>  lifecycle     1.0.3   2022-10-07 []  CRAN (R 4.2.2)
-    #>  magrittr      2.0.3   2022-03-30 []  CRAN (R 4.2.0)
-    #>  munsell       0.5.0   2018-06-12 []  CRAN (R 4.2.0)
-    #>  pillar        1.8.1   2022-08-19 []  CRAN (R 4.2.1)
-    #>  pkgconfig     2.0.3   2019-09-22 []  CRAN (R 4.2.0)
-    #>  R6            2.5.1   2021-08-19 []  CRAN (R 4.2.0)
-    #>  ragg          1.2.2   2022-02-21 []  CRAN (R 4.2.0)
-    #>  rlang         1.0.6   2022-09-24 []  CRAN (R 4.2.1)
-    #>  rmarkdown     2.19    2022-12-15 []  CRAN (R 4.2.2)
-    #>  rstudioapi    0.14    2022-08-22 []  CRAN (R 4.2.2)
-    #>  scales      * 1.2.1   2022-08-20 []  CRAN (R 4.2.2)
-    #>  sessioninfo   1.2.2   2021-12-06 []  CRAN (R 4.2.0)
-    #>  stringi       1.7.6   2021-11-29 []  CRAN (R 4.2.0)
-    #>  stringr       1.5.0   2022-12-02 []  CRAN (R 4.2.2)
-    #>  systemfonts   1.0.4   2022-02-11 []  CRAN (R 4.2.0)
-    #>  textshaping   0.3.6   2021-10-13 []  CRAN (R 4.2.0)
-    #>  tibble        3.1.8   2022-07-22 []  CRAN (R 4.2.1)
-    #>  tidyselect    1.2.0   2022-10-10 []  CRAN (R 4.2.2)
-    #>  utf8          1.2.2   2021-07-24 []  CRAN (R 4.2.0)
-    #>  vctrs         0.5.0   2022-10-22 []  CRAN (R 4.2.2)
-    #>  viridisLite   0.4.1   2022-08-22 []  CRAN (R 4.2.1)
-    #>  withr         2.5.0   2022-03-03 []  CRAN (R 4.2.0)
-    #>  xfun          0.36    2022-12-21 []  CRAN (R 4.2.2)
-    #>  yaml          2.3.5   2022-02-21 []  CRAN (R 4.2.0)
+    #>  package     * version    date (UTC) lib source
+    #>  cli           3.6.2      2023-12-11 []  CRAN (R 4.3.2)
+    #>  colorspace    2.1-0      2023-01-23 []  CRAN (R 4.3.2)
+    #>  digest        0.6.34     2024-01-11 []  CRAN (R 4.3.2)
+    #>  dplyr         1.1.4      2023-11-17 []  CRAN (R 4.3.2)
+    #>  evaluate      0.23       2023-11-01 []  CRAN (R 4.3.2)
+    #>  fansi         1.0.6      2023-12-08 []  CRAN (R 4.3.2)
+    #>  farver        2.1.1      2022-07-06 []  CRAN (R 4.3.2)
+    #>  fastmap       1.1.1      2023-02-24 []  CRAN (R 4.3.2)
+    #>  generics      0.1.3      2022-07-05 []  CRAN (R 4.3.2)
+    #>  ggplot2     * 3.5.0.9000 2024-02-27 []  local
+    #>  glue          1.7.0      2024-01-09 []  CRAN (R 4.3.2)
+    #>  gtable        0.3.4      2023-08-21 []  CRAN (R 4.3.2)
+    #>  highr         0.10       2022-12-22 []  CRAN (R 4.3.2)
+    #>  htmltools     0.5.7      2023-11-03 []  CRAN (R 4.3.2)
+    #>  knitr         1.45       2023-10-30 []  CRAN (R 4.3.2)
+    #>  labeling      0.4.3      2023-08-29 []  CRAN (R 4.3.1)
+    #>  lifecycle     1.0.4      2023-11-07 []  CRAN (R 4.3.2)
+    #>  magrittr      2.0.3      2022-03-30 []  CRAN (R 4.3.2)
+    #>  munsell       0.5.0      2018-06-12 []  CRAN (R 4.3.2)
+    #>  pillar        1.9.0      2023-03-22 []  CRAN (R 4.3.2)
+    #>  pkgconfig     2.0.3      2019-09-22 []  CRAN (R 4.3.2)
+    #>  R6            2.5.1      2021-08-19 []  CRAN (R 4.3.2)
+    #>  ragg          1.2.7      2023-12-11 []  CRAN (R 4.3.2)
+    #>  rlang         1.1.3      2024-01-10 []  CRAN (R 4.3.2)
+    #>  rmarkdown     2.25       2023-09-18 []  CRAN (R 4.3.2)
+    #>  rstudioapi    0.15.0     2023-07-07 []  CRAN (R 4.3.2)
+    #>  scales      * 1.3.0      2023-11-28 []  CRAN (R 4.3.2)
+    #>  sessioninfo   1.2.2      2021-12-06 []  CRAN (R 4.3.2)
+    #>  systemfonts   1.0.5      2023-10-09 []  CRAN (R 4.3.2)
+    #>  textshaping   0.3.7      2023-10-09 []  CRAN (R 4.3.2)
+    #>  tibble        3.2.1      2023-03-20 []  CRAN (R 4.3.2)
+    #>  tidyselect    1.2.0      2022-10-10 []  CRAN (R 4.3.2)
+    #>  utf8          1.2.4      2023-10-22 []  CRAN (R 4.3.2)
+    #>  vctrs         0.6.5      2023-12-01 []  CRAN (R 4.3.2)
+    #>  viridisLite   0.4.2      2023-05-02 []  CRAN (R 4.3.2)
+    #>  withr         3.0.0      2024-01-16 []  CRAN (R 4.3.2)
+    #>  xfun          0.41       2023-11-01 []  CRAN (R 4.3.2)
+    #>  yaml          2.3.8      2023-12-11 []  CRAN (R 4.3.2)
     #> 
     #> 
     #> ──────────────────────────────────────────────────────────────────────────────
