@@ -240,7 +240,11 @@ p +
 ```
 
 
-## Facetted tags
+### Facetted tags
+
+This used to be a tip about putting facet tags in panels, which used to be complicated. With ggplot2 3.5.0, you no longer have to fiddle with setting infinite positions and tweaking the `hjust` or `vjust` parameters. You can now just use `x = I(0.95), y = I(0.95)` to place text in the upper-right corner. Open up the details to see the old tip.
+
+<details>
 
 Putting text annotations on facetted plots is a pain, because limits can vary on a per-panel basis, so it is very difficult to find the correct position. 
 An extension that explores alleviating this pain is the [tagger](https://github.com/eliocamp/tagger) extension, but we can do a similar thing in vanilla ggplot2.
@@ -281,6 +285,8 @@ p + facet_wrap(~ class, scales = "free") +
     colour = "black"
   )
 ```
+
+</details>
 
 ## Recycling plots
 
